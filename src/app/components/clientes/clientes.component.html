@@ -1,0 +1,64 @@
+<form #employeeForm2="ngForm" (ngSubmit)="postData(employeeForm2)">
+  <h3>GET DATA</h3>
+  <h5>{{dataReceive}}</h5>
+  <h3>ENCRYPT</h3>
+  <div class="row">
+        <div class="input-field col s12">
+        <input type="text" name="name" #name="ngModel" [(ngModel)]="clientService.nombre" placeholder="Ingresa tu nombre">
+        </div>
+                <div class="card-action">
+          <div class="input-field col 12">
+              <button class="btn right" style="margin-left: 2px">Encrypt </button>
+          </div>
+        </div>
+
+</div>
+</form>
+
+<form #employeeForm3="ngForm" (ngSubmit)="sign_message(employeeForm3)">
+  <h3>GET DATA</h3>
+  <h5>{{dataReceive}}</h5>
+  <h3>SIGN</h3>
+  <div class="row">
+        <div class="input-field col s12">
+        <input type="text" name="name" #name="ngModel" [(ngModel)]="clientService.nombre" placeholder="Ingresa tu nombre">
+        </div>
+                <div class="card-action">
+          <div class="input-field col 12">
+              <button class="btn right" style="margin-left: 2px">Sign </button>
+          </div>
+        </div>
+
+</div>
+</form>
+
+<form #employeeForm4="ngForm" (ngSubmit)="blind_sign_message(employeeForm4)">
+  <h3>GET DATA</h3>
+  <h5>{{dataReceive}}</h5>
+  <h3>BLIND SIGNATURE</h3>
+  <div class="row">
+        <div class="input-field col s12">
+        <input type="text" name="name" #name="ngModel" [(ngModel)]="clientService.nombre" placeholder="Ingresa tu nombre">
+        </div>
+                <div class="card-action">
+          <div class="input-field col 12">
+              <button class="btn right" style="margin-left: 2px">Blind Signature</button>
+          </div>
+        </div>
+
+</div>
+</form>
+
+<form #employeeForm="ngForm">
+  <div class="heading">Messages</div>
+</form>
+
+<h3 class="response">
+  The message decrypted is: {{decrypted}}
+</h3>
+
+<h3 class="response" id="blind-sign-verified">
+  The message verified is: {{verified}}
+</h3>
+
+
