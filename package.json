@@ -22,6 +22,7 @@
     "bigint-conversion": "^2.1.1",
     "bigint-crypto-utils": "^2.4.7",
     "core-js": "^2.5.4",
+    "crypto-js": "^4.0.0",
     "object-sha": "^1.0.3",
     "rsa": "file:../../rsa",
     "rxjs": "~6.3.3",
