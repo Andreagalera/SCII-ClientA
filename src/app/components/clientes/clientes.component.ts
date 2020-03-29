@@ -9,6 +9,8 @@ import { HexBase64BinaryEncoding } from "crypto";
 import { timeout } from 'q';
 const sha = require('object-sha');
 import * as CryptoJS from 'crypto-js';
+const toBuffer = require('typedarray-to-buffer')
+
 
 
 
@@ -38,7 +40,32 @@ export class ClientesComponent implements OnInit {
 
   encriptKey: CryptoKey;
 
-  constructor(private clientService: ClienteService) { }
+  key: string;
+  c: string;
+  cryptoKey;
+  algKeyGen;
+  algEncrypt;
+  keyUsages;
+
+  Pr;
+  Pkp;
+
+  constructor(private clientService: ClienteService) {
+
+    // No repudiation
+    this.algKeyGen = {
+      name: 'AES-CBC',
+      length: 256
+    };
+    this.algEncrypt = {
+      name: 'AES-CBC',
+      iv: null
+    };
+    this.keyUsages = [
+      'encrypt',
+      'decrypt'
+    ];
+  }
 
   async ngOnInit() {
 
@@ -49,6 +76,12 @@ export class ClientesComponent implements OnInit {
     // Llamar función obtiene public key de B y TTP
     await this.getPublicKey();
     await this.getPublicKeyTTP();
+
+    // No repudiation
+    await crypto.subtle.generateKey(this.algKeyGen,true,this.keyUsages)
+      .then(data => this.cryptoKey = data);
+    await crypto.subtle.exportKey("raw",this.cryptoKey)
+      .then(data => this.key = bac.bufToHex(data));
 
   }
 
@@ -97,6 +130,7 @@ export class ClientesComponent implements OnInit {
     });
   }
 
+
   async blind_sign_message(form: NgForm) {
     // Generate the blinding factor
     const m = bac.textToBigint(form.value.name);
@@ -107,14 +141,38 @@ export class ClientesComponent implements OnInit {
     const b = await bac.bigintToHex(
       (m * this.publicKey.encrypt(this.r)) % this.publicKey.n
     );
-    // Criptograma
-    // const c = this.encriptKeyFnc(b);
+    // const digest = await sha.digest(b, 'SHA-256');
+    const message = {
+      msg: b
+    };
+    // const digest = await sha.digest(message, 'SHA-256');
+    this.clientService.post_message_sign(message).subscribe(async res => {
+      const bs = bac.hexToBigint(res['msg']);
+      const s =
+        (await (bs * bcu.modInv(this.r, this.publicKey.n))) % this.publicKey.n;
+      const m = await this.publicKey.verify(s);
+      let m1= bac.bigintToText(m);
+      console.log(m1);
+      document.getElementById(
+        "blind-sign-verified"
+      ).innerHTML = ("The message verified is: " +
+        bac.bigintToText(m));
+    });
+  }
+
+  async noRepudation(form: NgForm) {
+    const m = form.value.name;
+    await this.encrypt(m);
+    const mBigint = await bac.textToBigint(m);
+    const mHex = await bac.bigintToHex(mBigint);
+
+    console.log(this.c);
     var ts = new Date();
     const body = {
       type: "1",
       src: "A",
       dest: "B",
-      msg: b,
+      msg: this.c,
       timestamp: ts
     };
     // Signature
@@ -127,30 +185,22 @@ export class ClientesComponent implements OnInit {
       signature: signature
     };
 
-    this.clientService.post_message_sign(message).subscribe(async res => {
+    this.clientService.no_repudation(message).subscribe(async res => {
       console.log(res);
-      const bs = bac.hexToBigint(res['body']['msg']);
-      const s =
-        (await (bs * bcu.modInv(this.r, this.publicKey.n))) % this.publicKey.n;
-      const m = await this.publicKey.verify(s);
-      let m1 = bac.bigintToText(m);
-      // console.log(m1);
-      document.getElementById(
-        "blind-sign-verified"
-      ).innerHTML = ("The message verified is: " +
-        bac.bigintToText(m));
 
       // Si el mensaje de B se recibe como que quiere la k
       if (res['body']['type'] == 2) {
+        this.Pr = res['signature'];
         // Llamar a servicio que envie a TTP k
         var tsTTP = new Date();
-        const k = 2;
+        console.log(this.cryptoKey);
+        // const k = 2;
         const body = {
           type: "3",
           src: "A",
           dest: "B",
           ttp: "TTP",
-          k: k,
+          k: this.cryptoKey,
           timestamp: tsTTP
         };
         // Signature
@@ -166,6 +216,7 @@ export class ClientesComponent implements OnInit {
         this.clientService.sendK(messageTTP).subscribe(async resTTP =>{
           console.log("B ya puede saber C");
           console.log(resTTP);
+          this.Pkp = resTTP['signature'];
         });
 
 
@@ -173,76 +224,16 @@ export class ClientesComponent implements OnInit {
     });
   }
 
-
-  // Criptograma
-  async encriptKeyFnc(data) {
-    window.crypto.subtle.importKey(
-      "jwk", //can be "jwk" or "raw"
-      {   //this is an example jwk key, "raw" would be an ArrayBuffer
-        kty: "oct",
-        k: "Y0zt37HgOx-BY7SQjYVmrqhPkO44Ii2Jcb9yydUDPfE",
-        alg: "A256CBC",
-        ext: true,
-      },
-      {   //this is the algorithm options
-        name: "AES-CBC",
-        length: 256,
-      },
-      false, //whether the key is extractable (i.e. can be used in exportKey)
-      ["encrypt", "decrypt"] //can be "encrypt", "decrypt", "wrapKey", or "unwrapKey"
-    )
-      .then(function (key) {
-        //returns the symmetric key
-        // this.encriptKey = key;
-        console.log(key);
-        window.crypto.subtle.encrypt(
-          {
-            name: "AES-CBC",
-            //Don't re-use initialization vectors!
-            //Always generate a new iv every time your encrypt!
-            iv: window.crypto.getRandomValues(new Uint8Array(16)),
-          },
-          key, //from generateKey or importKey above
-          data //ArrayBuffer of data you want to encrypt
-        )
-          .then(function (encrypted) {
-            //returns an ArrayBuffer containing the encrypted data
-            console.log(new Uint8Array(encrypted));
-            return encrypted;
-          })
-        // .catch(function (err) {
-        //   console.error(err);
-        // });
-      });
-    // return encriptKey;
-
-  }
-  // .catch(function (err) {
-  //   console.error(err);
-  // });
-
-
-  async encriptK(data, encriptKey) {
-    window.crypto.subtle.encrypt(
-      {
-        name: "AES-CBC",
-        //Don't re-use initialization vectors!
-        //Always generate a new iv every time your encrypt!
-        iv: window.crypto.getRandomValues(new Uint8Array(16)),
-      },
-      encriptKey, //from generateKey or importKey above
-      data //ArrayBuffer of data you want to encrypt
-    )
-      .then(function (encrypted) {
-        //returns an ArrayBuffer containing the encrypted data
-        console.log(new Uint8Array(encrypted));
-        return encrypted;
-      })
-    // .catch(function (err) {
-    //   console.error(err);
-    // });
+  async encrypt(message) {
+    this.algEncrypt.iv = await crypto.getRandomValues(new Uint8Array(16));
+    await crypto.subtle.encrypt(this.algEncrypt, this.cryptoKey, bac.textToBuf(message))
+      .then(data => this.c = bac.bufToHex(data));
   }
 
+  async decrypt(message) {
+    await crypto.subtle.decrypt(this.algEncrypt, this.cryptoKey, bac.textToBuf(message))
+      .then(data => this.c = bac.bufToHex(data));
+  }
 
 
 }

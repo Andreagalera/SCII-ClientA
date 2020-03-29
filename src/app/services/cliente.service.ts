@@ -31,6 +31,10 @@ export class ClienteService {
     return this.http.post(this.URL_APIB + '/sign', body);
   }
 
+  no_repudation(body: object) {
+    return this.http.post(this.URL_APIB + '/nr', body);
+  }
+
   sendK(body: object) {
     return this.http.post(this.URL_APITTP + '/msg3', body);
   }

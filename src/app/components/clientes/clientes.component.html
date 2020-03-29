@@ -48,6 +48,22 @@
 
 </div>
 </form>
+<form #employeeForm5="ngForm" (ngSubmit)="noRepudation(employeeForm5)">
+  <h3>GET DATA</h3>
+  <h5>{{dataReceive}}</h5>
+  <h3>NO REPUDIO</h3>
+  <div class="row">
+        <div class="input-field col s12">
+        <input type="text" name="name" #name="ngModel" [(ngModel)]="clientService.nombre" placeholder="Ingresa tu nombre">
+        </div>
+                <div class="card-action">
+          <div class="input-field col 12">
+              <button class="btn right" style="margin-left: 2px">No repudio</button>
+          </div>
+        </div>
+
+</div>
+</form>
 
 <form #employeeForm="ngForm">
   <div class="heading">Messages</div>

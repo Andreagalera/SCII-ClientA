@@ -27,6 +27,7 @@
     "rsa": "file:../../rsa",
     "rxjs": "~6.3.3",
     "tslib": "^1.9.0",
+    "typedarray-to-buffer": "^3.1.5",
     "zone.js": "~0.8.26"
   },
   "devDependencies": {
