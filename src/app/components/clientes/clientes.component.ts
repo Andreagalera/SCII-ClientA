@@ -194,13 +194,14 @@ export class ClientesComponent implements OnInit {
         // Llamar a servicio que envie a TTP k
         var tsTTP = new Date();
         console.log(this.cryptoKey);
+        console.log(this.key);
         // const k = 2;
         const body = {
           type: "3",
           src: "A",
           dest: "B",
           ttp: "TTP",
-          k: this.cryptoKey,
+          k: this.key,
           timestamp: tsTTP
         };
         // Signature
