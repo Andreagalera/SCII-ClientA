@@ -202,6 +202,8 @@ export class ClientesComponent implements OnInit {
         // Llamar a servicio que envie a TTP k
         // var tsTTP = new Date();
         console.log(this.cryptoKey);
+        console.log(this.algEncrypt.iv);
+        console.log(bac.bufToHex(this.algEncrypt.iv));
         console.log(this.key);
         // const k = 2;
         const body = {
@@ -210,6 +212,7 @@ export class ClientesComponent implements OnInit {
           dest: "B",
           ttp: "TTP",
           k: this.key,
+          iv: bac.bufToHex(this.algEncrypt.iv),
           timestamp: tsTTP
         };
         // Signature
