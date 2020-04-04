@@ -182,17 +182,25 @@ export class ClientesComponent implements OnInit {
     signature = await bac.bigintToHex(signature);
     const message = {
       body: body,
-      signature: signature
+      signature: signature,
+      pubKey: {e: bac.bigintToHex(this.keyPair.publicKey.e), n: bac.bigintToHex(this.keyPair.publicKey.n)}
     };
 
     this.clientService.no_repudation(message).subscribe(async res => {
       console.log(res);
-
+       // Comprovar prueba
+      let proofDigest = bac.bigintToHex (await this.publicKey.verify(bac.hexToBigint(res['signature'])));
+      let bodyDigest = await sha.digest(res['body']);
+      // Comprovar timestamp
+      var tsTTP = new Date();
+      var tsB = res['body']['timestamp'];
+      tsB = new Date(tsB);
+      var seconds = (tsTTP.getTime() - tsB.getTime()) / 1000;
       // Si el mensaje de B se recibe como que quiere la k
-      if (res['body']['type'] == 2) {
+      if ((res['body']['type'] == 2) && (seconds < 1) && (bodyDigest === proofDigest)) {
         this.Pr = res['signature'];
         // Llamar a servicio que envie a TTP k
-        var tsTTP = new Date();
+        // var tsTTP = new Date();
         console.log(this.cryptoKey);
         console.log(this.key);
         // const k = 2;
@@ -211,17 +219,32 @@ export class ClientesComponent implements OnInit {
         signatureTTP = await bac.bigintToHex(signatureTTP);
         const messageTTP = {
           body: body,
-          signature: signatureTTP
+          signature: signatureTTP,
+          pubKey: {e: bac.bigintToHex(this.keyPair.publicKey.e), n: bac.bigintToHex(this.keyPair.publicKey.n)}
         };
 
         this.clientService.sendK(messageTTP).subscribe(async resTTP =>{
-          console.log("B ya puede saber C");
           console.log(resTTP);
+          // Comprovar prueba
+          let proofDigest2 = bac.bigintToHex (await this.publicKeyTTP.verify(bac.hexToBigint(resTTP['signature'])));
+          let bodyDigest2 = await sha.digest(resTTP['body']);
+          // Comprovar timestamp
+          var tsTTP3 = new Date();
+          var tsTTP2 = res['body']['timestamp'];
+          tsTTP2 = new Date(tsTTP2);
+          var seconds2 = (tsTTP3.getTime() - tsTTP2.getTime()) / 1000;
+          // Si el mensaje de B se recibe como que quiere la k
+          if ((resTTP['body']['type'] == 4) && (seconds2 < 1) && (bodyDigest2 === proofDigest2)) {
+          console.log("B ya puede saber C");
           this.Pkp = resTTP['signature'];
+          }
+          else { console.log("Pruebas malamente 2"); }
         });
 
 
       }
+      else { console.log("Pruebas malamente"); }
+
     });
   }
 
